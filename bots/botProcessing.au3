@@ -84,12 +84,30 @@ Func KillFinance1()
 
     If $bFoundFinance Then
         ; มีการปิด popup อย่างน้อย 1 ครั้ง
-        MsgBox($MB_ICONWARNING + $MB_TOPMOST, "Patient Info", "Finance Locked.", 5)
+        MsgBox($MB_ICONWARNING + $MB_TOPMOST, "Patient Info", "Finance Locked.", 3)
         PostToApi("/financeLock")
         Return True
     Else
         Return False
     EndIf
+EndFunc
+
+Func HideHosXp()
+	 Local $hEcel = WinGetHandle($sHosXpTitle)
+	 ;Local $hEcel = WinGetHandle("[CLASS:XLMAIN]")
+	if $hEcel Then WinSetState($hEcel, "", @SW_MINIMIZE)
+EndFunc
+
+Func HideCmd1()
+	 Local $hEcel = WinGetHandle($sHookTitle)
+	 ;Local $hEcel = WinGetHandle("[CLASS:XLMAIN]")
+	if $hEcel Then WinSetState($hEcel, "", @SW_MINIMIZE)
+EndFunc
+
+Func HideCmd2()
+	 Local $hEcel = WinGetHandle($sApiTitle)
+	 ;Local $hEcel = WinGetHandle("[CLASS:XLMAIN]")
+	if $hEcel Then WinSetState($hEcel, "", @SW_MINIMIZE)
 EndFunc
 
 Func SwapXP($sHosXpTitle)
@@ -114,7 +132,6 @@ Func SwapXP($sHosXpTitle)
 		    MsgBox($MB_ICONERROR + $MB_TOPMOST, "Warning!","Not found window:"&@CRLF&$sHosXpTitle,10)
 		    Exit 0
     EndIf
-	;ConsoleWrite("SwapHosOS"& @CRLF & "Success")
 EndFunc
 
 Func BotProcessing()
@@ -126,14 +143,16 @@ Func BotProcessing()
    Local $sQueue = FileRead($oLogQueue)
    Sleep(100)
    ConsoleWrite("bot queue: "&$sQueue&@CRLF)
+   HideCmd1()
+   HideCmd2()
    SwapXP($sHosXpTitle)
+   Sleep(200)
    Local $hWndXp = WinGetHandle($sHosXpTitle)
    Local $hCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxTextEdit; INSTANCE:4]") ;specify outer rectangle
-
    ControlSetText($hWndXp, "", $hCtrl, $sQueue)
    Sleep(500)
    ControlClick($hWndXp,"",$hCtrl,"left")
-   Sleep(1000)
+   Sleep(700)
    ;ControlSend($hWndXp,"",$hCtrl, $sQueue)
    Send("{ENTER}")
    Local $hListShow
@@ -153,7 +172,6 @@ Func BotProcessing()
      Return True
   EndIf
 EndFunc
-
 MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Start bot", "Bot queue going to start please wait...", 2)
 if BotProcessing() Then
   MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Success", "Bot record successfully.", 2)

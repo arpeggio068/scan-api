@@ -13,7 +13,7 @@ function exec_Fl(str){
 }
 
 function botQueue(){
-   exec_Fl(path.join(__dirname,'botProcessing.exe'))   
+   exec_Fl(path.join(__dirname,'botProcessing.au3'))   
 }
 
 function botMsgBox1(){
