@@ -176,7 +176,7 @@ app.post("/complete", (req, res) => {
   res.json({ status: "complete" });
 });
 
-app.post("/financelock", (req, res) => {
+app.post("/financeLock", (req, res) => {
   releaseNext = true;
   console.log("Release next request immediately due to /financelock");
   res.json({ status: "complete with finance locked" });

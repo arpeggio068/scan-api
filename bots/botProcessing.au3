@@ -1,5 +1,4 @@
 #RequireAdmin
-#include <Excel.au3>
 #include <AutoItConstants.au3>
 #include <MsgBoxConstants.au3>
 #Include <WinAPI.au3>
@@ -9,8 +8,9 @@
 #include <StringConstants.au3>
 #include <StaticConstants.au3>
 #include <WindowsConstants.au3>
-#include "OpenCV-Match_UDF_Mod.au3"
-#include <CppKeySend.au3>
+;#include <Excel.au3>
+;#include "OpenCV-Match_UDF_Mod.au3"
+;#include <CppKeySend.au3>
 
 Opt("MouseCoordMode", 1)
 Opt("WinTitleMatchMode", 2)
@@ -20,7 +20,7 @@ Global $gHTTPNode = ObjCreate("WinHttp.WinHttpRequest.5.1")
 Global $sLogQueue = @ScriptDir &"\queue.txt"
 Global $oLogQueue
 
-Global $sHosXpTitle = "HOSxPMedicationOrderQueueGeneratorForm"   ;HOSxPMedicationOrderQueueGeneratorForm - BMS-HOSxP XE 4.0
+Global $sHosXpTitle = "HOSxPMedicationOrderQueueGeneratorForm"
 Global $sHookTitle = "ScanWedgeClient" ;
 Global $sApiTitle = "Pharm Q Server"
 
@@ -32,7 +32,7 @@ Func Hkey()
 	MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Hkey", "Stop Process")
 	Exit 0
 EndFunc
-;#32770
+
 Func FindPopup()
     Local $aList = WinList()
     For $i = 1 To $aList[0][0]
@@ -70,7 +70,6 @@ Func KillFinance1()
             Local $sClass = _WinAPI_GetClassName($hWnd)
             If $sClass = "#32770" And StringInStr($aList[$i][0], "HOSxPMedicationOrderQueueGeneratorForm") Then
                 ConsoleWrite("found popup: " & $hWnd & " -> WinClose/WinKill" & @CRLF)
-                ; ปิด popup
                 WinClose($hWnd)
                 Sleep(500)
                 If WinExists($hWnd) Then
@@ -78,36 +77,59 @@ Func KillFinance1()
                     ConsoleWrite("WinKill popup" & @CRLF)
                 EndIf
                 $bFoundFinance = True
-                ExitLoop ; เจอแล้วออก loop ทันที
+                ExitLoop
             EndIf
         EndIf
     Next
 
     If $bFoundFinance Then
         ; มีการปิด popup อย่างน้อย 1 ครั้ง
-        MsgBox($MB_ICONWARNING + $MB_TOPMOST, "Patient Info", "Finance Locked.", 10)
-        FileClose($oLogQueue)
-        PostToApi("/financelock")
+        MsgBox($MB_ICONWARNING + $MB_TOPMOST, "Patient Info", "Finance Locked.", 5)
+        PostToApi("/financeLock")
         Return True
     Else
-        ; ไม่เจอ popup
         Return False
     EndIf
+EndFunc
+
+Func SwapXP($sHosXpTitle)
+		;_ArrayDisplay($aList)
+	Local $aList = WinList($sHosXpTitle) ;Winlist all hos os
+	Local $aList_Length = $aList[0][0]
+
+	If $aList_Length > 0 Then
+				For $i = 1 To $aList_Length
+					$sTitle = $aList[$i][0]
+					$hHandle = $aList[$i][1]
+						If $sTitle <> "" And BitAND(WinGetState($hHandle), 2) Then
+							;MsgBox($MB_SYSTEMMODAL, "", "Title: " & $aList[$i][0] & @CRLF & "Handle: " & $aList[$i][1])
+							WinActivate($sTitle)
+							Sleep(1000)
+						    ;WinMove($sTitle, "", $aXpPos[0], $aXpPos[1], $aXpPos[2], $aXpPos[3])
+							ExitLoop
+						EndIf
+				Next
+	Else
+			FileClose($oLogQueue)
+		    MsgBox($MB_ICONERROR + $MB_TOPMOST, "Warning!","Not found window:"&@CRLF&$sHosXpTitle,10)
+		    Exit 0
+    EndIf
+	;ConsoleWrite("SwapHosOS"& @CRLF & "Success")
 EndFunc
 
 Func BotProcessing()
   $oLogQueue = FileOpen($sLogQueue, $FO_READ)
    If $oLogQueue = -1 Then
 			MsgBox($MB_ICONERROR + $MB_TOPMOST, "Error", "An error occurred when reading the file."& @CRLF & $sLogQueue)
-			Return
+			Return False
    EndIf
    Local $sQueue = FileRead($oLogQueue)
    Sleep(100)
    ConsoleWrite("bot queue: "&$sQueue&@CRLF)
+   SwapXP($sHosXpTitle)
    Local $hWndXp = WinGetHandle($sHosXpTitle)
    Local $hCtrl = ControlGetHandle($hWndXp, "", "[CLASS:TcxTextEdit; INSTANCE:4]") ;specify outer rectangle
-   WinActivate($hWndXp)
-   Sleep(1000)
+
    ControlSetText($hWndXp, "", $hCtrl, $sQueue)
    Sleep(500)
    ControlClick($hWndXp,"",$hCtrl,"left")
@@ -115,18 +137,25 @@ Func BotProcessing()
    ;ControlSend($hWndXp,"",$hCtrl, $sQueue)
    Send("{ENTER}")
    Local $hListShow
+   Local $bKill = False
    While 1
-	   Sleep(1000)
-	   KillFinance1()
+	   Sleep(500)
+	   if KillFinance1() Then $bKill = True
 	   $hListShow = ControlGetHandle($hWndXp, "", "[CLASS:TcxCurrencyEdit; INSTANCE:8]")
        If $hListShow And _WinAPI_IsWindowVisible($hListShow) Then ExitLoop
    WEnd
 
    FileClose($oLogQueue)
-   PostToApi("/complete")
+   If $bKill Then
+      Return True
+   Else
+     PostToApi("/complete")
+     Return True
+  EndIf
 EndFunc
 
 MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Start bot", "Bot queue going to start please wait...", 2)
-BotProcessing()
-MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Success", "Bot record successfully.", 2)
+if BotProcessing() Then
+  MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Success", "Bot record successfully.", 2)
+EndIf
 Exit 0
