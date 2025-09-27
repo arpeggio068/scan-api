@@ -121,9 +121,14 @@ Func SwapXP($sHosXpTitle)
 					$hHandle = $aList[$i][1]
 						If $sTitle <> "" And BitAND(WinGetState($hHandle), 2) Then
 							;MsgBox($MB_SYSTEMMODAL, "", "Title: " & $aList[$i][0] & @CRLF & "Handle: " & $aList[$i][1])
-							WinActivate($sTitle)
-							Sleep(1000)
+							;WinActivate($sTitle)
 						    ;WinMove($sTitle, "", $aXpPos[0], $aXpPos[1], $aXpPos[2], $aXpPos[3])
+							WinSetState($sTitle, "", @SW_RESTORE)
+							Sleep(200)
+							WinSetState($sTitle, "", @SW_MAXIMIZE)
+							Sleep(200)
+							DllCall("user32.dll", "int", "SetForegroundWindow", "hwnd", $hWndXp)
+							Sleep(500)
 							ExitLoop
 						EndIf
 				Next
@@ -172,7 +177,7 @@ Func BotProcessing()
      Return True
   EndIf
 EndFunc
-MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Start bot", "Bot queue going to start please wait...", 2)
+MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Start bot", "Bot queue going to start please wait...", 1)
 if BotProcessing() Then
   MsgBox($MB_ICONINFORMATION + $MB_TOPMOST, "Success", "Bot record successfully.", 2)
 EndIf
